@@ -72,7 +72,8 @@ map.on('load', () => {
         .attr('stroke-width', 1)    // Marker border thickness
         .attr('opacity', 0.8);      // Marker opacity
       
-      // 4. Helper function: Convert a station's coordinates to pixel values using Mapbox's projection
+      // 4. Helper function: Convert a station's coordinates to pixel values 
+      // using Mapbox's projection
       function getCoords(station) {
         // Note: property names in the JSON are "Lat" and "Long"
         const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
@@ -95,76 +96,32 @@ map.on('load', () => {
       map.on('zoom', updatePositions);
       map.on('resize', updatePositions);
       map.on('moveend', updatePositions);
-    })
-    .catch(error => {
-      console.error("Error loading Bluebikes station data:", error);
-    });
-});
-
-map.on('load', () => {
-  // 1. Load station data (Bluebikes stations JSON)
-  d3.json("https://dsc106.com/labs/lab07/data/bluebikes-stations.json")
-    .then(stationData => {
-      // Adjust the path if your JSON nests stations under a different property.
-      let stations = stationData.data.stations;
-      console.log("Stations Array:", stations);
-      
-      // 2. Create an SVG overlay for the station markers
-      const svg = d3.select('#map').select('svg');
-      
-      // Create a circle for each station
-      const circles = svg.selectAll('circle')
-        .data(stations)
-        .enter()
-        .append('circle')
-        .attr('fill', 'steelblue')
-        .attr('stroke', 'white')
-        .attr('stroke-width', 1)
-        .attr('opacity', 0.6);
-      
-      // Helper function: Convert a station's coordinates (using properties "Long" and "Lat")
-      function getCoords(station) {
-        // Convert string values to numbers using the unary plus (+)
-        const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
-        const { x, y } = map.project(point);
-        return { cx: x, cy: y };
-      }
-      
-      // Function to update circle positions based on current map view
-      function updatePositions() {
-        circles
-          .attr('cx', d => getCoords(d).cx)
-          .attr('cy', d => getCoords(d).cy);
-      }
-      
-      // Initial position update and update on map interactions
-      updatePositions();
-      map.on('move', updatePositions);
-      map.on('zoom', updatePositions);
-      map.on('resize', updatePositions);
-      map.on('moveend', updatePositions);
-      
-      // 3. Now load the Bluebikes traffic CSV data
+    
+      // --- Step 4.1: Load the Traffic CSV Data ---
       d3.csv("https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv")
         .then(trips => {
-          console.log("Traffic trips:", trips);
-          
-          // 4. Compute departures and arrivals using d3.rollup:
+          console.log("Traffic trips loaded:", trips);
+        
+          // --- Step 4.2: Calculate Traffic at Each Station ---
+          // Calculate departures: count trips keyed by start_station_id
           const departures = d3.rollup(
             trips,
             v => v.length,
             d => d.start_station_id
           );
+        
+          // Calculate arrivals: count trips keyed by end_station_id
           const arrivals = d3.rollup(
             trips,
             v => v.length,
             d => d.end_station_id
           );
           
-          // 5. Update each station object with traffic info.
-          // Note: Adjust the station ID property as needed. Here we assume station.Number matches the CSV IDs.
+          // Update each station object with departures, arrivals, and totalTraffic.
+          // NOTE: Adjust the station identifier property as needed.
+          // Here we assume the station's ID is stored in station.short_name.
           stations = stations.map(station => {
-            const id = station.Number; 
+            let id = station.short_name;  // Or station.Number if that holds the ID.
             station.departures = departures.get(id) ?? 0;
             station.arrivals = arrivals.get(id) ?? 0;
             station.totalTraffic = station.departures + station.arrivals;
@@ -172,29 +129,30 @@ map.on('load', () => {
           });
           console.log("Stations with traffic:", stations);
           
-          // 6. Create a square root scale to size the circles by total traffic.
+          // --- Step 4.3: Size Markers According to Traffic ---
+          // Create a square root scale to map totalTraffic to circle radii.
           const radiusScale = d3.scaleSqrt()
             .domain([0, d3.max(stations, d => d.totalTraffic)])
             .range([0, 25]);
           
-          // 7. Update the circles with the new radius based on total traffic,
-          // and add a tooltip showing detailed traffic numbers.
+          // Bind the updated station data to the circles and set their radius.
           circles.data(stations)
             .attr('r', d => radiusScale(d.totalTraffic))
+            // --- Step 4.4: Add Tooltip for Detailed Traffic Numbers ---
             .each(function(d) {
-              // Remove any previous title element if it exists.
+              // Remove any previous <title> element to avoid duplicates.
               d3.select(this).select('title').remove();
-              // Append a title for the browser’s default tooltip.
+              // Append a <title> element for browser-default tooltips.
               d3.select(this)
                 .append('title')
                 .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
             });
         })
         .catch(error => {
-          console.error("Error loading Bluebikes traffic data:", error);
+          console.error("Error loading traffic CSV:", error);
         });
-    })
-    .catch(error => {
-      console.error("Error loading Bluebikes station data:", error);
-    });
+      })
+      .catch(error => {
+        console.error("Error loading station JSON:", error);
+      });
 });
