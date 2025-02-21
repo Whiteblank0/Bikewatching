@@ -100,3 +100,101 @@ map.on('load', () => {
       console.error("Error loading Bluebikes station data:", error);
     });
 });
+
+map.on('load', () => {
+  // 1. Load station data (Bluebikes stations JSON)
+  d3.json("https://dsc106.com/labs/lab07/data/bluebikes-stations.json")
+    .then(stationData => {
+      // Adjust the path if your JSON nests stations under a different property.
+      let stations = stationData.data.stations;
+      console.log("Stations Array:", stations);
+      
+      // 2. Create an SVG overlay for the station markers
+      const svg = d3.select('#map').select('svg');
+      
+      // Create a circle for each station
+      const circles = svg.selectAll('circle')
+        .data(stations)
+        .enter()
+        .append('circle')
+        .attr('fill', 'steelblue')
+        .attr('stroke', 'white')
+        .attr('stroke-width', 1)
+        .attr('opacity', 0.6);
+      
+      // Helper function: Convert a station's coordinates (using properties "Long" and "Lat")
+      function getCoords(station) {
+        // Convert string values to numbers using the unary plus (+)
+        const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
+        const { x, y } = map.project(point);
+        return { cx: x, cy: y };
+      }
+      
+      // Function to update circle positions based on current map view
+      function updatePositions() {
+        circles
+          .attr('cx', d => getCoords(d).cx)
+          .attr('cy', d => getCoords(d).cy);
+      }
+      
+      // Initial position update and update on map interactions
+      updatePositions();
+      map.on('move', updatePositions);
+      map.on('zoom', updatePositions);
+      map.on('resize', updatePositions);
+      map.on('moveend', updatePositions);
+      
+      // 3. Now load the Bluebikes traffic CSV data
+      d3.csv("https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv")
+        .then(trips => {
+          console.log("Traffic trips:", trips);
+          
+          // 4. Compute departures and arrivals using d3.rollup:
+          const departures = d3.rollup(
+            trips,
+            v => v.length,
+            d => d.start_station_id
+          );
+          const arrivals = d3.rollup(
+            trips,
+            v => v.length,
+            d => d.end_station_id
+          );
+          
+          // 5. Update each station object with traffic info.
+          // Note: Adjust the station ID property as needed. Here we assume station.Number matches the CSV IDs.
+          stations = stations.map(station => {
+            const id = station.Number; 
+            station.departures = departures.get(id) ?? 0;
+            station.arrivals = arrivals.get(id) ?? 0;
+            station.totalTraffic = station.departures + station.arrivals;
+            return station;
+          });
+          console.log("Stations with traffic:", stations);
+          
+          // 6. Create a square root scale to size the circles by total traffic.
+          const radiusScale = d3.scaleSqrt()
+            .domain([0, d3.max(stations, d => d.totalTraffic)])
+            .range([0, 25]);
+          
+          // 7. Update the circles with the new radius based on total traffic,
+          // and add a tooltip showing detailed traffic numbers.
+          circles.data(stations)
+            .attr('r', d => radiusScale(d.totalTraffic))
+            .each(function(d) {
+              // Remove any previous title element if it exists.
+              d3.select(this).select('title').remove();
+              // Append a title for the browser’s default tooltip.
+              d3.select(this)
+                .append('title')
+                .text(`${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`);
+            });
+        })
+        .catch(error => {
+          console.error("Error loading Bluebikes traffic data:", error);
+        });
+    })
+    .catch(error => {
+      console.error("Error loading Bluebikes station data:", error);
+    });
+});
