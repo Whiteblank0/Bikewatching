@@ -40,9 +40,63 @@ map.on('load', () => {
     type: 'line',
     source: 'cambridge_route',
     paint: {
-      'line-color': '#32D400',  // Bright green color (you can adjust as needed)
+      'line-color': 'green',
       'line-width': 3,
       'line-opacity': 0.4
     }
   });
+});
+
+map.on('load', () => {
+  // 1. Fetch and parse the Bluebikes stations JSON
+  const jsonUrl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
+  d3.json(jsonUrl)
+    .then(jsonData => {
+      console.log("Loaded JSON Data:", jsonData);
+      
+      // Access the stations array; adjust based on the actual JSON structure
+      const stations = jsonData.data.stations;
+      console.log("Stations Array:", stations);
+      
+      // 2. Select the SVG element that’s been overlaid on the map
+      const svg = d3.select('#map').select('svg');
+      
+      // 3. Append a circle for each station
+      const circles = svg.selectAll('circle')
+        .data(stations)
+        .enter()
+        .append('circle')
+        .attr('r', 5)               // Radius of the marker
+        .attr('fill', 'steelblue')  // Marker fill color
+        .attr('stroke', 'white')    // Marker border color
+        .attr('stroke-width', 1)    // Marker border thickness
+        .attr('opacity', 0.8);      // Marker opacity
+      
+      // 4. Helper function: Convert a station's coordinates to pixel values using Mapbox's projection
+      function getCoords(station) {
+        // Note: property names in the JSON are "Lat" and "Long"
+        const point = new mapboxgl.LngLat(+station.Long, +station.Lat);
+        const { x, y } = map.project(point);
+        return { cx: x, cy: y };
+      }
+      
+      // 5. Function to update circle positions
+      function updatePositions() {
+        circles
+          .attr('cx', d => getCoords(d).cx)
+          .attr('cy', d => getCoords(d).cy);
+      }
+      
+      // Update positions initially
+      updatePositions();
+      
+      // 6. Reposition markers when the map moves, zooms, or resizes
+      map.on('move', updatePositions);
+      map.on('zoom', updatePositions);
+      map.on('resize', updatePositions);
+      map.on('moveend', updatePositions);
+    })
+    .catch(error => {
+      console.error("Error loading Bluebikes station data:", error);
+    });
 });
