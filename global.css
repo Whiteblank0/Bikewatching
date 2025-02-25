@@ -25,3 +25,11 @@ html, body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: subtle shadow for effect */
   border-radius: 8px; /* Optional: rounded corners */
 }
+
+svg circle {
+  pointer-events: auto;
+  fill: steelblue;
+  fill-opacity: 0.6;
+  stroke: white;
+  stroke-width: 1;
+}
