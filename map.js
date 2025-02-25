@@ -5,6 +5,12 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
 b2M4N2JrcTJiZyJ9.riOnl6M_9KHCELlB_duQ1A';
 
+function getCoords(station) {
+  const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
+  const { x, y } = map.project(point);  // Project to pixel coordinates
+  return { cx: x, cy: y };  // Return as object for use in SVG attributes
+}
+
 // Initialize the map
 const map = new mapboxgl.Map({
   container: 'map', // ID of the div where the map will render
@@ -61,12 +67,6 @@ map.on('load', async () => {
         console.log('Stations Array:', stations);
 
         const svg = d3.select('#map').select('svg');
-
-        function getCoords(station) {
-          const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
-          const { x, y } = map.project(point);  // Project to pixel coordinates
-          return { cx: x, cy: y };  // Return as object for use in SVG attributes
-        }
 
         // Append circles to the SVG for each station
         const circles = svg.selectAll('circle')
