@@ -66,7 +66,10 @@ map.on('load', async () => {
         let stations = jsonData.data.stations;
         console.log('Stations Array:', stations);
 
-        const svg = d3.select('#map').select('svg');
+        const container = document.getElementById('map');
+        const svg = d3.select(container)
+          .append('svg')
+          .attr('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;');
 
         // Append circles to the SVG for each station
         const circles = svg.selectAll('circle')
