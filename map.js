@@ -1,6 +1,9 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
+let departuresByMinute = Array.from({ length: 1440 }, () => []);
+let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
 b2M4N2JrcTJiZyJ9.riOnl6M_9KHCELlB_duQ1A';
@@ -9,6 +12,25 @@ function getCoords(station) {
   const point = new mapboxgl.LngLat(+station.lon, +station.lat);  // Convert lon/lat to Mapbox LngLat
   const { x, y } = map.project(point);  // Project to pixel coordinates
   return { cx: x, cy: y };  // Return as object for use in SVG attributes
+}
+
+function filterByMinute(tripsByMinute, minute) {
+  if (minute === -1) {
+    return tripsByMinute.flat(); // No filtering, return all trips
+  }
+
+  // Normalize both min and max minutes to the valid range [0, 1439]
+  let minMinute = (minute - 60 + 1440) % 1440;
+  let maxMinute = (minute + 60) % 1440;
+
+  // Handle time filtering across midnight
+  if (minMinute > maxMinute) {
+    let beforeMidnight = tripsByMinute.slice(minMinute);
+    let afterMidnight = tripsByMinute.slice(0, maxMinute);
+    return beforeMidnight.concat(afterMidnight).flat();
+  } else {
+    return tripsByMinute.slice(minMinute, maxMinute).flat();
+  }
 }
 
 // Initialize the map
@@ -71,6 +93,15 @@ map.on('load', async () => {
           (trip) => {
             trip.started_at = new Date(trip.started_at);
             trip.ended_at = new Date(trip.ended_at);
+
+            // Calculate the minute of the day for both start and end.
+            const startMinute = minutesSinceMidnight(trip.started_at);
+            const endMinute = minutesSinceMidnight(trip.ended_at);
+
+            // Add the trip to the corresponding buckets.
+            departuresByMinute[startMinute].push(trip);
+            arrivalsByMinute[endMinute].push(trip);
+
             return trip;
           },
         );
@@ -109,7 +140,7 @@ map.on('load', async () => {
 
         // Append circles to the SVG for each station
         const circles = svg.selectAll('circle')
-          .data(stations)
+          .data(stations, (d) => d.short_name)
           .enter()
           .append('circle')
           .attr('r', d => radiusScale(d.totalTraffic)) // Radius of the circle
@@ -149,19 +180,15 @@ function formatTime(minutes) {
 }
 
 function computeStationTraffic(stations, timeFilter = -1) {
-  // Filter trips based on the selected time.
-  const filteredTrips = filterTripsbyTime(allTrips, timeFilter);
-  
-  // Compute departures: count trips by start_station_id.
+  // Retrieve filtered trips efficiently
   const departures = d3.rollup(
-    filteredTrips,
+    filterByMinute(departuresByMinute, timeFilter), // Efficient retrieval
     (v) => v.length,
     (d) => d.start_station_id
   );
-  
-  // Compute arrivals: count trips by end_station_id.
+
   const arrivals = d3.rollup(
-    filteredTrips,
+    filterByMinute(arrivalsByMinute, timeFilter), // Efficient retrieval
     (v) => v.length,
     (d) => d.end_station_id
   );
@@ -217,9 +244,23 @@ function updateTimeDisplay() {
     anyTimeLabel.style.display = 'none';    // Hide "(any time)"
   }
 
-  // Trigger filtering logic here. For example:
-  // filterStationsByTime(timeFilter);
+  // Call updateScatterPlot to reflect the changes on the map
+  updateScatterPlot(timeFilter);
 }
+
+function updateScatterPlot(timeFilter) {
+  // Recompute station traffic based on the filtered trips
+  const filteredStations = computeStationTraffic(stations, timeFilter);
+
+  timeFilter === -1 ? radiusScale.range([0, 25]) : radiusScale.range([3, 50]);
+  
+  // Update the scatterplot by adjusting the radius of circles
+  circles
+    .data(filteredStations, (d) => d.short_name)
+    .join('circle') // Ensure the data is bound correctly
+    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+}
+
 
 // Bind the slider’s input event to update the display in real time
 timeSlider.addEventListener('input', updateTimeDisplay);
