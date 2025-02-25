@@ -32,3 +32,24 @@ svg circle {
   fill-opacity: 0.6;
   stroke: white;
 }
+
+header {
+  display: flex;
+  gap: 1em;
+  align-items: baseline;
+  width: 100%;
+}
+
+label {
+  margin-left: auto;
+}
+
+#selected-time,
+#any-time {
+  display: block; /* Ensures these elements are on separate lines */
+}
+
+/* Optional: style the slider input */
+input[type="range"] {
+  width: 200px;
+}

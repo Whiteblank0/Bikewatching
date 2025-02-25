@@ -63,11 +63,17 @@ map.on('load', async () => {
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
 
-        let stations = jsonData.data.stations;
+        let stations = computeStationTraffic(jsonData.data.stations);
         console.log('Stations Array:', stations);
 
-        // Load the Bluebikes traffic data CSV
-        const trips = await d3.csv("https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv");
+        let trips = await d3.csv(
+          'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
+          (trip) => {
+            trip.started_at = new Date(trip.started_at);
+            trip.ended_at = new Date(trip.ended_at);
+            return trip;
+          },
+        );
 
         // Calculate departures and arrivals
         const departures = d3.rollup(
@@ -135,3 +141,86 @@ map.on('load', async () => {
         console.error('Error loading JSON:', error); // Handle errors
     }
 });
+
+// Global helper function to format minutes since midnight to a readable time (e.g., 8:30 AM)
+function formatTime(minutes) {
+  const date = new Date(0, 0, 0, 0, minutes);
+  return date.toLocaleString('en-US', { timeStyle: 'short' });
+}
+
+function computeStationTraffic(stations, timeFilter = -1) {
+  // Filter trips based on the selected time.
+  const filteredTrips = filterTripsbyTime(allTrips, timeFilter);
+  
+  // Compute departures: count trips by start_station_id.
+  const departures = d3.rollup(
+    filteredTrips,
+    (v) => v.length,
+    (d) => d.start_station_id
+  );
+  
+  // Compute arrivals: count trips by end_station_id.
+  const arrivals = d3.rollup(
+    filteredTrips,
+    (v) => v.length,
+    (d) => d.end_station_id
+  );
+  
+  // Update each station with arrivals, departures, and total traffic.
+  return stations.map((station) => {
+    let id = station.short_name;
+    station.arrivals = arrivals.get(id) ?? 0;
+    station.departures = departures.get(id) ?? 0;
+    station.totalTraffic = station.arrivals + station.departures;
+    return station;
+  });
+}
+
+// Returns the number of minutes since midnight for a given Date.
+function minutesSinceMidnight(date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function filterTripsbyTime(trips, timeFilter) {
+  return timeFilter === -1 
+    ? trips // If no filter is applied (-1), return all trips
+    : trips.filter((trip) => {
+        // Convert trip start and end times to minutes since midnight
+        const startedMinutes = minutesSinceMidnight(trip.started_at);
+        const endedMinutes = minutesSinceMidnight(trip.ended_at);
+        
+        // Include trips that started or ended within 60 minutes of the selected time
+        return (
+          Math.abs(startedMinutes - timeFilter) <= 60 ||
+          Math.abs(endedMinutes - timeFilter) <= 60
+        );
+    });
+}
+
+// Global variable to hold the time filter
+let timeFilter = -1;
+
+// Select the slider and display elements
+const timeSlider = document.getElementById('time-slider');
+const selectedTime = document.getElementById('selected-time');
+const anyTimeLabel = document.getElementById('any-time');
+
+// Function to update the time display and update the timeFilter variable
+function updateTimeDisplay() {
+  timeFilter = Number(timeSlider.value);
+
+  if (timeFilter === -1) {
+    selectedTime.textContent = '';        // Clear the formatted time display
+    anyTimeLabel.style.display = 'block';   // Show "(any time)"
+  } else {
+    selectedTime.textContent = formatTime(timeFilter);  // Display formatted time
+    anyTimeLabel.style.display = 'none';    // Hide "(any time)"
+  }
+
+  // Trigger filtering logic here. For example:
+  // filterStationsByTime(timeFilter);
+}
+
+// Bind the slider’s input event to update the display in real time
+timeSlider.addEventListener('input', updateTimeDisplay);
+updateTimeDisplay();
