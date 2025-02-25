@@ -108,11 +108,8 @@ map.on('load', async () => {
           .append('circle')
           .attr('r', d => radiusScale(d.totalTraffic)) // Radius of the circle
           .attr('fill', 'steelblue')  // Circle fill color
-          .attr('fill-opacity', 0.6)  
-          .attr('stroke', 'white')    // Circle border color
           .attr('stroke-width', 1)    // Circle border thickness
           .attr('opacity', 0.8)      // Circle opacity
-          .attr('pointer-events', 'auto')
           .each(function(d) {
             d3.select(this)
               .append('title')
