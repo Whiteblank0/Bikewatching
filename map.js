@@ -3,16 +3,18 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
-let jsonData;
-let stations;
-let radiusScale;
-let circles;
+let jsonData, stations, radiusScale, circles;
+
 // Global variable to hold the time filter
 let timeFilter = -1;
+
 // Select the slider and display elements
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
 const anyTimeLabel = document.getElementById('any-time');
+
+// This scale maps a continuous value [0, 1] to discrete values [0, 0.5, 1]
+const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
@@ -156,6 +158,7 @@ map.on('load', async () => {
           .attr('fill', 'steelblue')  // Circle fill color
           .attr('stroke-width', 1)    // Circle border thickness
           .attr('opacity', 0.8)      // Circle opacity
+          .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic)) 
           .each(function(d) {
             d3.select(this)
               .append('title')
