@@ -3,6 +3,10 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+let jsonData;
+let stations;
+let radiusScale;
+let circles;
 
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
@@ -77,10 +81,6 @@ map.on('load', async () => {
     }
   });
 
-  let jsonData;
-  let stations;
-  let radiusScale;
-  let circles;
     try {
         const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
         
