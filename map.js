@@ -7,6 +7,8 @@ let jsonData;
 let stations;
 let radiusScale;
 let circles;
+// Global variable to hold the time filter
+let timeFilter = -1;
 
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
@@ -171,6 +173,15 @@ map.on('load', async () => {
         map.on('zoom', updatePositions);     // Update during zooming
         map.on('resize', updatePositions);   // Update on window resize
         map.on('moveend', updatePositions);  // Final adjustment after movement ends
+
+        // Select the slider and display elements
+        const timeSlider = document.getElementById('time-slider');
+        const selectedTime = document.getElementById('selected-time');
+        const anyTimeLabel = document.getElementById('any-time');
+
+        // Bind the slider’s input event to update the display in real time
+        timeSlider.addEventListener('input', updateTimeDisplay);
+        updateTimeDisplay();
     } catch (error) {
         console.error('Error loading JSON:', error); // Handle errors
     }
@@ -227,14 +238,6 @@ function filterTripsbyTime(trips, timeFilter) {
     });
 }
 
-// Global variable to hold the time filter
-let timeFilter = -1;
-
-// Select the slider and display elements
-const timeSlider = document.getElementById('time-slider');
-const selectedTime = document.getElementById('selected-time');
-const anyTimeLabel = document.getElementById('any-time');
-
 // Function to update the time display and update the timeFilter variable
 function updateTimeDisplay() {
   timeFilter = Number(timeSlider.value);
@@ -263,8 +266,3 @@ function updateScatterPlot(timeFilter) {
     .join('circle') // Ensure the data is bound correctly
     .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
 }
-
-
-// Bind the slider’s input event to update the display in real time
-timeSlider.addEventListener('input', updateTimeDisplay);
-updateTimeDisplay();
