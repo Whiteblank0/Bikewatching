@@ -3,6 +3,7 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+let stations;
 
 // Global variable to hold the time filter
 let timeFilter = -1;
@@ -97,7 +98,7 @@ map.on('load', async () => {
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
 
-        const stations = computeStationTraffic(jsonData.data.stations);
+        stations = computeStationTraffic(jsonData.data.stations);
         console.log('Stations Array:', stations);
 
         let trips = await d3.csv(
