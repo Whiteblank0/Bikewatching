@@ -3,7 +3,6 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
-let jsonData, stations, radiusScale, circles;
 
 // Global variable to hold the time filter
 let timeFilter = -1;
@@ -56,6 +55,8 @@ const map = new mapboxgl.Map({
 });
 
 map.on('load', async () => {
+  let jsonData;
+  
   // Boston bike lanes source and layer (from previous steps)
   map.addSource('boston_route', {
     type: 'geojson',
@@ -96,7 +97,7 @@ map.on('load', async () => {
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
 
-        stations = computeStationTraffic(jsonData.data.stations);
+        const stations = computeStationTraffic(jsonData.data.stations);
         console.log('Stations Array:', stations);
 
         let trips = await d3.csv(
@@ -140,7 +141,7 @@ map.on('load', async () => {
         console.log("Updated stations with traffic:", stations);
 
         // Create a square-root scale for circle radii based on totalTraffic
-        radiusScale = d3.scaleSqrt()
+        const radiusScale = d3.scaleSqrt()
           .domain([0, d3.max(stations, d => d.totalTraffic)])
           .range([0, 25]);
 
@@ -150,7 +151,7 @@ map.on('load', async () => {
           .attr('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;');
 
         // Append circles to the SVG for each station
-        circles = svg.selectAll('circle')
+        const circles = svg.selectAll('circle')
           .data(stations, (d) => d.short_name)
           .enter()
           .append('circle')
@@ -158,7 +159,8 @@ map.on('load', async () => {
           .attr('fill', 'steelblue')  // Circle fill color
           .attr('stroke-width', 1)    // Circle border thickness
           .attr('opacity', 0.8)      // Circle opacity
-          .style("--departure-ratio", d => stationFlow(d.departures / d.totalTraffic)) 
+          .style("--departure-ratio", d => 
+            stationFlow(d.departures / d.totalTraffic)) 
           .each(function(d) {
             d3.select(this)
               .append('title')
@@ -224,22 +226,6 @@ function minutesSinceMidnight(date) {
   return date.getHours() * 60 + date.getMinutes();
 }
 
-function filterTripsbyTime(trips, timeFilter) {
-  return timeFilter === -1 
-    ? trips // If no filter is applied (-1), return all trips
-    : trips.filter((trip) => {
-        // Convert trip start and end times to minutes since midnight
-        const startedMinutes = minutesSinceMidnight(trip.started_at);
-        const endedMinutes = minutesSinceMidnight(trip.ended_at);
-        
-        // Include trips that started or ended within 60 minutes of the selected time
-        return (
-          Math.abs(startedMinutes - timeFilter) <= 60 ||
-          Math.abs(endedMinutes - timeFilter) <= 60
-        );
-    });
-}
-
 // Function to update the time display and update the timeFilter variable
 function updateTimeDisplay() {
   timeFilter = Number(timeSlider.value);
@@ -266,5 +252,8 @@ function updateScatterPlot(timeFilter) {
   circles
     .data(filteredStations, (d) => d.short_name)
     .join('circle') // Ensure the data is bound correctly
-    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+    .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+    .style('--departure-ratio', (d) =>
+      stationFlow(d.departures / d.totalTraffic),
+    );
 }

@@ -53,3 +53,32 @@ label {
 input[type="range"] {
   width: 200px;
 }
+
+/* Define base colors for departures and arrivals */
+:root {
+  --color-departures: steelblue;
+  --color-arrivals: darkorange;
+}
+
+/* Apply the computed mix as the fill color using the custom property */
+#map circle, .legend > div {
+  /* Mix the colors using the computed departure ratio */
+  --color: color-mix(
+    in oklch,
+    var(--color-departures) calc(100% * var(--departure-ratio)),
+    var(--color-arrivals)
+  );
+  fill: var(--color);
+}
+
+.legend {
+  display: flex;
+  gap: 1px;
+  margin-block: 1em;
+}
+.legend > div {
+  flex: 1;
+  padding: 0.5em;
+  text-align: center;
+  color: white; /* adjust based on your color mix for contrast */
+}
