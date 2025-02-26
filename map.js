@@ -3,7 +3,7 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
-let stations;
+let stations, radiusScale, circles;
 
 // Global variable to hold the time filter
 let timeFilter = -1;
@@ -142,7 +142,7 @@ map.on('load', async () => {
         console.log("Updated stations with traffic:", stations);
 
         // Create a square-root scale for circle radii based on totalTraffic
-        const radiusScale = d3.scaleSqrt()
+        radiusScale = d3.scaleSqrt()
           .domain([0, d3.max(stations, d => d.totalTraffic)])
           .range([0, 25]);
 
@@ -152,7 +152,7 @@ map.on('load', async () => {
           .attr('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;');
 
         // Append circles to the SVG for each station
-        const circles = svg.selectAll('circle')
+        circles = svg.selectAll('circle')
           .data(stations, (d) => d.short_name)
           .enter()
           .append('circle')
