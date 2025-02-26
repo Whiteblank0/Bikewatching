@@ -60,15 +60,18 @@ input[type="range"] {
   --color-arrivals: darkorange;
 }
 
-/* Apply the computed mix as the fill color using the custom property */
-#map circle, .legend > div {
-  /* Mix the colors using the computed departure ratio */
+/* Common rule for both map circles and legend swatches */
+#map circle,
+.legend .swatch {
+  /* Use color-mix() to blend the two colors based on the departure ratio */
   --color: color-mix(
     in oklch,
     var(--color-departures) calc(100% * var(--departure-ratio)),
     var(--color-arrivals)
   );
+  /* For map circles, fill is applied via fill; for legend, we use background-color */
   fill: var(--color);
+  background-color: var(--color);
 }
 
 /* Legend container styling */
