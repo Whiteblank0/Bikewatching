@@ -85,7 +85,7 @@ map.on('load', async () => {
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
 
-        let stations = computeStationTraffic(jsonData.data.stations);
+        const stations = computeStationTraffic(jsonData.data.stations);
         console.log('Stations Array:', stations);
 
         let trips = await d3.csv(
