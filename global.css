@@ -71,14 +71,29 @@ input[type="range"] {
   fill: var(--color);
 }
 
+/* Legend container styling */
 .legend {
   display: flex;
-  gap: 1px;
-  margin-block: 1em;
+  align-items: center;
+  gap: 1em;           /* space between legend items */
+  margin-block: 1em;  /* vertical space from the map */
 }
-.legend > div {
-  flex: 1;
-  padding: 0.5em;
-  text-align: center;
-  color: white; /* adjust based on your color mix for contrast */
+
+/* Legend label (the "Legend:" text) */
+.legend-label {
+  font-weight: bold;
+}
+
+/* Legend item: use flexbox for each swatch-label pair */
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;        /* smaller gap between swatch and label */
+}
+
+/* Swatch styling */
+.legend .swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ccc;
 }
