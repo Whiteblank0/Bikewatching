@@ -74,29 +74,34 @@ input[type="range"] {
   background-color: var(--color);
 }
 
-/* Legend container styling */
 .legend {
+  /* Layout & spacing */
   display: flex;
   align-items: center;
-  gap: 1em;           /* space between legend items */
-  margin-block: 1em;  /* vertical space from the map */
+  gap: 1.5rem;           /* space between each legend item */
+  font-family: sans-serif;
 }
 
-/* Legend label (the "Legend:" text) */
-.legend-label {
+.legend-title {
+  /* Style for the "LEGEND:" label */
   font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: #444;
 }
 
-/* Legend item: use flexbox for each swatch-label pair */
 .legend-item {
+  /* Each swatch + label pair */
   display: flex;
   align-items: center;
-  gap: 0.5em;        /* smaller gap between swatch and label */
+  gap: 0.5rem;           /* small gap between swatch and text */
 }
 
-/* Swatch styling */
-.legend .swatch {
-  width: 20px;
-  height: 20px;
+.swatch {
+  /* Circular colored indicator */
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;    /* makes the swatch a circle */
   border: 1px solid #ccc;
 }
