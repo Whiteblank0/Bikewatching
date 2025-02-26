@@ -78,6 +78,9 @@ map.on('load', async () => {
   });
 
   let jsonData;
+  let stations;
+  let radiusScale;
+  let circles;
     try {
         const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
         
@@ -85,7 +88,7 @@ map.on('load', async () => {
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
 
-        const stations = computeStationTraffic(jsonData.data.stations);
+        stations = computeStationTraffic(jsonData.data.stations);
         console.log('Stations Array:', stations);
 
         let trips = await d3.csv(
@@ -129,7 +132,7 @@ map.on('load', async () => {
         console.log("Updated stations with traffic:", stations);
 
         // Create a square-root scale for circle radii based on totalTraffic
-        const radiusScale = d3.scaleSqrt()
+        radiusScale = d3.scaleSqrt()
           .domain([0, d3.max(stations, d => d.totalTraffic)])
           .range([0, 25]);
 
@@ -139,7 +142,7 @@ map.on('load', async () => {
           .attr('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;');
 
         // Append circles to the SVG for each station
-        const circles = svg.selectAll('circle')
+        circles = svg.selectAll('circle')
           .data(stations, (d) => d.short_name)
           .enter()
           .append('circle')
