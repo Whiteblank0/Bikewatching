@@ -4,9 +4,9 @@ import mapboxgl from 'https://cdn.jsdelivr.net/npm/mapbox-gl@2.15.0/+esm';
 let departuresByMinute = Array.from({ length: 1440 }, () => []);
 let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
 let jsonData;
-let stations;
-let radiusScale;
-let circles;
+
+// Global variable to hold the time filter
+let timeFilter = -1;
 
 // Set your Mapbox access token here
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2lzc3Nob3QiLCJhIjoiY203ZTlvbW13MGJ2NDJ0\
@@ -83,13 +83,15 @@ map.on('load', async () => {
 
     try {
         const jsonurl = "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
-        
         // Await JSON fetch
         const jsonData = await d3.json(jsonurl);
         console.log('Loaded JSON Data:', jsonData); // Log to verify structure
+    } catch (error) {
+        console.error('Error loading JSON:', error); // Handle errors
+    }
 
-        stations = computeStationTraffic(jsonData.data.stations);
-        console.log('Stations Array:', stations);
+    const stations = computeStationTraffic(jsonData.data.stations);
+    console.log('Stations Array:', stations);
 
         let trips = await d3.csv(
           'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
@@ -132,7 +134,7 @@ map.on('load', async () => {
         console.log("Updated stations with traffic:", stations);
 
         // Create a square-root scale for circle radii based on totalTraffic
-        radiusScale = d3.scaleSqrt()
+        const radiusScale = d3.scaleSqrt()
           .domain([0, d3.max(stations, d => d.totalTraffic)])
           .range([0, 25]);
 
@@ -142,7 +144,7 @@ map.on('load', async () => {
           .attr('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;');
 
         // Append circles to the SVG for each station
-        circles = svg.selectAll('circle')
+        const circles = svg.selectAll('circle')
           .data(stations, (d) => d.short_name)
           .enter()
           .append('circle')
@@ -171,9 +173,6 @@ map.on('load', async () => {
         map.on('zoom', updatePositions);     // Update during zooming
         map.on('resize', updatePositions);   // Update on window resize
         map.on('moveend', updatePositions);  // Final adjustment after movement ends
-    } catch (error) {
-        console.error('Error loading JSON:', error); // Handle errors
-    }
 });
 
 // Global helper function to format minutes since midnight to a readable time (e.g., 8:30 AM)
@@ -227,9 +226,6 @@ function filterTripsbyTime(trips, timeFilter) {
     });
 }
 
-// Global variable to hold the time filter
-let timeFilter = -1;
-
 // Select the slider and display elements
 const timeSlider = document.getElementById('time-slider');
 const selectedTime = document.getElementById('selected-time');
@@ -263,7 +259,6 @@ function updateScatterPlot(timeFilter) {
     .join('circle') // Ensure the data is bound correctly
     .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
 }
-
 
 // Bind the slider’s input event to update the display in real time
 timeSlider.addEventListener('input', updateTimeDisplay);
